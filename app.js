@@ -32,4 +32,7 @@ app.use("/api", todoRoutes);
 // Mendengarkan di port tertentu
 app.listen(PORT, () => {
     console.log("server running on PORT " + PORT);
+
+ console.log(`Mongo URI: ${process.env.MONGO_URI}`);
+
 });
