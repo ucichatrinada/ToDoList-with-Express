@@ -1,21 +1,21 @@
-require('dotenv').config(); // Pastikan ini ada di bagian atas
+require('dotenv').config();
 const express = require("express");
+const cors = require('cors');
 const dotenv = require("dotenv");
 const connectDB = require("./DB/connect");
 const todoRoutes = require("./routes/todo-route");
 const authRoutes = require("./routes/auth-routes");
 const indexRoutes = require("./routes/index");
 
-const TodoModel = require("./models/todo");
+const Todo = require("./models/todo");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
-
-// Memuat variabel lingkungan
+// Load environment variables
 dotenv.config();
 
-// Menghubungkan ke database
+// Connect to database
 connectDB()
     .then(() => {
         console.log("berhasil connect ke db");
@@ -24,48 +24,71 @@ connectDB()
         console.log("gagal konek ke db");
     });
 
-// Middleware untuk parsing JSON
+// CORS Middleware
+const corsOptions = {
+    origin: 'http://localhost:5173', // Izinkan frontend dari localhost:5173
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Metode yang diizinkan
+    allowedHeaders: ['Content-Type'], // Header yang diizinkan
+};
+app.use(cors(corsOptions));
 
+// Middleware untuk parsing JSON
 app.use(express.json());
 
-// Menggunakan rute
+// Routes
 app.use("/", indexRoutes);
 app.use("/auth", authRoutes);
 app.use("/api", todoRoutes);
 
-app.post('/add', (req,res)=>{
-    const task = req.body.task;
-    TodoModel.create({
-        task: task
-    }).then(result=> res.json(result))
-    .catch(err=>res.json(err))
-})
-app.get('/get',(req,res) => {
-    TodoModel.find()
-    .then(result=>res.json(result))
-    .catch(err=> res.json(err))
-})
-app.put('/update/:id',(req,res)=>{
-    const {id} = req.params;
-    console.log(id);
-})
-// Mendengarkan di port tertentu
-app.listen(PORT, () => {
-    console.log(`Server running on PORT ${PORT}`);
-    console.log(`Mongo URI: ${process.env.MONGO_URI}`);
-});
-// Endpoint API
-app.get('Server running on PORT ${PORT}', async (req, res) => {
-    try {
-        const todos = await Todo.find(); // Ambil data dari MongoDB
-        res.json(todos); // Kirimkan data sebagai JSON
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching todos' });
+// POST: Menambah task baru
+app.post('/add', (req, res) => {
+    console.log('Request body:', req.body); // Lihat data yang diterima dari frontend
+    const { title, description } = req.body;
+
+    if (!title) {
+        return res.status(400).json({ message: 'Title is required' });
     }
+
+    Todo.create({
+        title,
+        description: description || '',
+        completed: false,
+    })
+    .then(result => res.json(result))
+    .catch(err => {
+        console.error('Error saving task:', err);
+        res.status(500).json({ error: err.message });
+    });
 });
+
+
+
+// GET: Mengambil semua tasks
+app.get('/get', (req, res) => {
+    Todo.find()
+        .then(result => res.json(result))
+        .catch(err => res.status(500).json({ error: err.message }));
+});
+
+// PUT: Memperbarui task
+app.put('/update/:id', (req, res) => {
+    const { id } = req.params;
+    const { task, completed } = req.body;
+    Todo.findByIdAndUpdate(id, { task, completed }, { new: true })
+        .then(result => {
+            if (result) {
+                res.json(result);
+            } else {
+                res.status(404).json({ message: "Task not found" });
+            }
+        })
+        .catch(err => res.status(500).json({ error: err.message }));
+});
+
+// DELETE: Menghapus task
 app.delete('/api/todos/:id', (req, res) => {
-    const id = req.params.id;  // Pastikan ID ditangkap dengan benar
-    TodoModel.findByIdAndDelete(id)
+    const id = req.params.id;
+    Todo.findByIdAndDelete(id)
         .then(result => {
             if (result) {
                 res.json({ message: 'Todo deleted successfully' });
@@ -76,3 +99,8 @@ app.delete('/api/todos/:id', (req, res) => {
         .catch(err => res.status(500).json({ error: err.message }));
 });
 
+// Start server
+app.listen(PORT, () => {
+    console.log(`Server running on PORT ${PORT}`);
+    console.log(`Mongo URI: ${process.env.MONGO_URI}`);
+});
