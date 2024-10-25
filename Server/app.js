@@ -7,6 +7,8 @@ const todoRoutes = require("./routes/todo-route");
 const authRoutes = require("./routes/auth-routes");
 const indexRoutes = require("./routes/index");
 
+const path = require('path');
+
 const Todo = require("./models/todo");
 
 const app = express();
@@ -34,6 +36,14 @@ app.use(cors(corsOptions));
 
 // Middleware untuk parsing JSON
 app.use(express.json());
+
+// ** Middleware untuk melayani file statis **
+app.use(express.static(path.join(__dirname, '../Todo/build'))); // Sesuaikan path dengan lokasi frontend Anda
+
+// ** Route untuk halaman utama **
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Todo/build', 'index.html'));
+});
 
 // Routes
 app.use("/", indexRoutes);
