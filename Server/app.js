@@ -38,11 +38,11 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // ** Middleware untuk melayani file statis **
-app.use(express.static(path.join(__dirname, '../Todo/build'))); // Sesuaikan path dengan lokasi frontend Anda
+app.use(express.static(path.join(__dirname, '../Todo/dist'))); // Sesuaikan path dengan lokasi frontend Anda
 
 // ** Route untuk halaman utama **
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../Todo/build', 'index.html'));
+    res.sendFile(path.join(__dirname, '../Todo/dist', 'index.html'));
 });
 
 // Routes
